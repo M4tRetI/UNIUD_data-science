@@ -37,18 +37,10 @@ athletes <- read_csv("Dataset/athlete_events.csv") %>%
   mutate(BMI = Weight/(Height/100)^2)
 noc_regions <- read_csv("Dataset/noc_regions.csv")
 
-worldcities <- read_csv("Dataset/worldcities.csv") %>%
-  select(city, country, iso3) %>%
-  rename(City = city) %>%
-  rbind(c(City = "Antwerpen", country = "Belgium", iso3 = "BEL")) %>%
-  rbind(c(City = "Athina", country = "Greece", iso3 = "GRC")) %>%
-  rbind(c(City = "Montreal", country = "Canada", iso3 = "CAN"))
-
 athletes_f <- athletes[athletes$Sex == "F", ]
 athletes_m <- athletes[athletes$Sex == "M", ]
+winners <- athletes %>% na.omit(Medal)
 ```
-
-### Andamento del numero di atleti per edizione, con la suddivisione per sesso
 
 <!-- potrebbe servire per fare sostanza (informazioni di base) -->
 ```{r}
@@ -71,7 +63,7 @@ ggplot(partecipanti, aes(fill=Sex, y=value, x=Year)) +
 <!-- forse anche no -->
 
 
-<!-- potrebbe servire per fare sostanza (curiosità) -->
+<!-- POTREBBE SERVIRE PER INTRODURRE ANALISI PIù INCENTRATA SUL NUOTO -->
 ```{r}
 # Atleti per sport
 
@@ -157,71 +149,14 @@ athletes %>%
 # fig
 ```
 
-### Analisi
-<!-- interessante analizzare la trasformate per capire quali relazioni o altro il fatto delle medaglie così è inutile (magari trovare altro o meglio abbandonare) -->
-```{r}
-ggplot(athletes, aes(y=Height, x=Age, color = Medal)) + 
-  geom_point() +
-  ggtitle("Altezza-eta atleti e medagli vinte") +
-  theme_minimal()
-ggplot(athletes, aes(y=Height, x=Weight, color = Medal)) + 
-  geom_point() +
-  ggtitle("Altezza-peso atleti e medagli vinte") +
-  scale_color_manual("legend", values = c("Gold" = "#FFDF00", "Silver" = "#C0C0C0", "Bronze" = "#CD7F32"), na.value = "#F0F0F0") +
-  theme_minimal()
-ggplot(athletes, aes(y=Weight, x=Age, color = Medal)) + 
-  geom_point() +
-  ggtitle("Peso-eta atleti e medagli vinte") +
-  scale_color_manual("legend", values = c("Gold" = "#FFDF00", "Silver" = "#C0C0C0", "Bronze" = "#CD7F32"), na.value = "#F0F0F0") +
-  theme_minimal()
-```
 
-<!-- TUTTO INUTILE -->
-```{r}
-# categorie o correlazioni o altro (est. punto precedente)  - sembra essere tutto inutile
-
-# Height ~ Age : NIENTE
-# Height ~ Weight : NIENTE
-# Weight ~ Age : NIENTE
-# BMI ~ Age : NIENTE
-# Year ~ Age : NIENTE
-
-ggplot(athletes_m, aes(y=Age, x=Year, color = BMI)) + 
-  geom_point() +
-  ggtitle("Altezza-eta atleti e medagli vinte") +
-  theme_minimal()
-
-ggplot(athletes_m, aes(y=log(Age), x=Year)) + 
-  geom_point() +
-  ggtitle("Altezza-eta atleti e medagli vinte") +
-  theme_minimal()
-
-ggplot(athletes_m, aes(y=log(Age), x=sqrt(Year))) + 
-  geom_point() +
-  ggtitle("Altezza-eta atleti e medagli vinte") +
-  theme_minimal()
-
-ggplot(athletes_m, aes(y=sqrt(Age), x=Year)) + 
-  geom_point() +
-  ggtitle("Altezza-eta atleti e medagli vinte") +
-  theme_minimal()
-
-ggplot(athletes_m, aes(y=sqrt(Age), x=Year^2)) + 
-  geom_point() +
-  ggtitle("Altezza-eta atleti e medagli vinte") +
-  theme_minimal()
-
-ggplot(athletes_m, aes(y=Age, x=log(Year))) + 
-  geom_point() +
-  ggtitle("Altezza-eta atleti e medagli vinte") +
-  theme_minimal()
-```
-
+### Altro
 
 
 <!-- RISULTATO INTERESSANTE - DA INSERIRE -->
 ```{r}
 # Gli atleti alti 183 cm hanno all'ìncirca 4 volte più probabilità rispetto alle altre altezze di vincere una medaglia
+# QUESTO è SOLO MASCHI, FARE ANCHE PER FEMMINE
 
 # individuo la probabilità di vincita (medaglia qualsiasi) di ogni altezza rispetto al totale
 temp <- athletes_m %>%
@@ -255,21 +190,27 @@ ggplot(temp2, aes(x = Height, y = prob*100)) +
 # summary(temp2) # media : 0.002106 ; max : 0.008819
 
 ```
-
 ```{r}
-# sembra essere INUTILE
-athletes %>%
-  na.omit(Medal) %>%
-ggplot(aes(y=Height, x=Sport, color = Medal)) + 
-  geom_point(size = 0.8) +
-  ggtitle("BMI-eta atleti e sport praticato") +
-  scale_color_manual("legend", values = c("Gold" = "#FFDF00", "Silver" = "#C0C0C0", "Bronze" = "#CD7F32"), na.value = "#F0F0F0") +
-  theme_minimal() +
-  facet_wrap(vars(Medal))
+# Potrebbe essere ciò che mi porta a parlare del nuoto
+# Lo sport in cui un aspetto fisico è più importante
+# ALTEZZA - scontato
 
-# Approfondire questo aspetto
-boxplot(Height ~ Sport, athletes)
+# ETA
+winners %>%
+  filter(Sport %in% c("Rhythmic Gymnastics", "Swimming", "Diving", "Gymnastics", "Figure Skating", "Equestrianism", "Golf", "Beach Volleyball")) %>%
+ggplot(aes(x=reorder(Sport, Age, median), y=Age)) + 
+  geom_boxplot() +
+  geom_vline(aes(xintercept = 4.5), color = "blue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# BMI - NON COSì INTERESANTE. weightlifting e rugby e roba di forza BMI alto, gli sport di grazia come ginnastica ritmica o nuoto sincronizzato bassa
+
+# WEIGTH - COME BMI
 ```
+
+
+
 <!-- fatto così sembra essere INUTILE -->
 ```{r}
 ggplot(athletes[athletes$Sex == "M", ], aes(Height, fill = Medal, order = Medal)) +
@@ -310,9 +251,5 @@ boxplot(Height ~ Age, athletes, subset = Sex == "F", range = 2)
 
 ```
 
-
-```{r}
-
-```
 
 
