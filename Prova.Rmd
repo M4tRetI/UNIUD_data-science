@@ -43,6 +43,9 @@ worldcities <- read_csv("Dataset/worldcities.csv") %>%
   rbind(c(City = "Antwerpen", country = "Belgium", iso3 = "BEL")) %>%
   rbind(c(City = "Athina", country = "Greece", iso3 = "GRC")) %>%
   rbind(c(City = "Montreal", country = "Canada", iso3 = "CAN"))
+
+athletes_f <- athletes[athletes$Sex == "F", ]
+athletes_m <- athletes[athletes$Sex == "M", ]
 ```
 
 ### Andamento del numero di atleti per edizione, con la suddivisione per sesso
@@ -93,6 +96,27 @@ ggplot(data.frame(sport_tempo_m), aes(area = Freq, label = paste(Var1, paste0(tr
 ```
 <!-- forse anche no -->
 
+<!-- lo userei come riempitivo, non informazioni importanti -->
+```{r}
+# Sport nei quali l'età non detta la competitività
+hist(athletes_m$Age, freq = FALSE, breaks = 80, main = "Densità dell'età - Maschi")
+hist(athletes_f$Age, freq = FALSE, breaks = 80, main = "Densità dell'età - Femmine")
+summary(athletes_m)
+summary(athletes_f)
+
+# Ci sono diversi uomini e donne con un età oltre il terzo quartile che in media si attesta a 28 anni,
+# quali sport praticano Rowing, Sailing, Gymnastics, Equestrianism, Fencing, Shooting, Athletics
+athletes %>%
+  filter(Sport %in% c("Sailing", "Equestrianism", "Fencing", "Shooting")) %>%       # sport meno dipendenti dall'età
+  ggplot(aes(Age, fill = Medal)) +
+    geom_histogram() +
+    scale_fill_manual("legend", values = c("Gold" = "#FFDF00", "Silver" = "#C0C0C0", "Bronze" = "#CD7F32"), na.value = "#F0F0F0") +
+    theme_minimal() +
+    facet_wrap(vars(Sport))
+```
+
+
+
 ### Andamento numero medagli per paese
 ```{r}
 ## INUTILE -----
@@ -139,7 +163,6 @@ ggplot(data.frame(sport_tempo_m), aes(area = Freq, label = paste(Var1, paste0(tr
 ggplot(athletes, aes(y=Height, x=Age, color = Medal)) + 
   geom_point() +
   ggtitle("Altezza-eta atleti e medagli vinte") +
-  scale_color_manual("legend", values = c("Gold" = "#FFDF00", "Silver" = "#C0C0C0", "Bronze" = "#CD7F32"), na.value = "#F0F0F0") +
   theme_minimal()
 ggplot(athletes, aes(y=Height, x=Weight, color = Medal)) + 
   geom_point() +
@@ -153,14 +176,84 @@ ggplot(athletes, aes(y=Weight, x=Age, color = Medal)) +
   theme_minimal()
 ```
 
-<!-- RISULTATO INTERESSANTE - POSSIBILMENTE : magari provare questa cosa con k-means per categorizzare -->
+<!-- TUTTO INUTILE -->
 ```{r}
-athletes %>%
-  filter(Sex == "M", Year > 1944) %>%
-ggplot(aes(y=BMI, x=Age, color = Sport)) + 
-  geom_point(size = 0.8) +
-  ggtitle("BMI-eta atleti e sport praticato") +
+# categorie o correlazioni o altro (est. punto precedente)  - sembra essere tutto inutile
+
+# Height ~ Age : NIENTE
+# Height ~ Weight : NIENTE
+# Weight ~ Age : NIENTE
+# BMI ~ Age : NIENTE
+# Year ~ Age : NIENTE
+
+ggplot(athletes_m, aes(y=Age, x=Year, color = BMI)) + 
+  geom_point() +
+  ggtitle("Altezza-eta atleti e medagli vinte") +
   theme_minimal()
+
+ggplot(athletes_m, aes(y=log(Age), x=Year)) + 
+  geom_point() +
+  ggtitle("Altezza-eta atleti e medagli vinte") +
+  theme_minimal()
+
+ggplot(athletes_m, aes(y=log(Age), x=sqrt(Year))) + 
+  geom_point() +
+  ggtitle("Altezza-eta atleti e medagli vinte") +
+  theme_minimal()
+
+ggplot(athletes_m, aes(y=sqrt(Age), x=Year)) + 
+  geom_point() +
+  ggtitle("Altezza-eta atleti e medagli vinte") +
+  theme_minimal()
+
+ggplot(athletes_m, aes(y=sqrt(Age), x=Year^2)) + 
+  geom_point() +
+  ggtitle("Altezza-eta atleti e medagli vinte") +
+  theme_minimal()
+
+ggplot(athletes_m, aes(y=Age, x=log(Year))) + 
+  geom_point() +
+  ggtitle("Altezza-eta atleti e medagli vinte") +
+  theme_minimal()
+```
+
+
+
+<!-- RISULTATO INTERESSANTE - DA INSERIRE -->
+```{r}
+# Gli atleti alti 183 cm hanno all'ìncirca 4 volte più probabilità rispetto alle altre altezze di vincere una medaglia
+
+# individuo la probabilità di vincita (medaglia qualsiasi) di ogni altezza rispetto al totale
+temp <- athletes_m %>%
+  filter(Sport == "Swimming")
+temp1 <- temp %>%
+  na.omit(Medal)
+temp2 <- temp1 %>%
+  group_by(Height) %>%
+  summarize(prob = n()/nrow(temp)) %>%
+  arrange(prob)
+
+ggplot(temp2, aes(x = Height, y = prob*100)) +
+  geom_point() +
+  geom_segment(aes(x = Height, xend = Height, y = 0, yend = prob*100)) +
+  geom_hline(aes(yintercept=mean(prob*100)), color = "navyblue") +
+  geom_text(aes(160,mean(prob*100),label = paste("Media:", mean(prob*100)), vjust = -1), color = "navyblue") +
+  geom_segment(aes(x = 176, xend = 176, y = 0.22, yend = 0.88), color = "blue",
+               arrow = arrow(length = unit(0.02, "npc"), ends = "both")) +
+  geom_text(aes(174,0.6,label = "4x"), color = "blue", size = 7) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# ggplot(temp2, aes(x = reorder(Height, prob), y = prob*100)) +
+#   geom_point() +
+#   geom_segment(aes(x = reorder(Height, prob), xend = reorder(Height, prob), y = 0, yend = prob*100)) +
+#   theme_minimal() +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+
+# summary(temp2) # media : 0.002106 ; max : 0.008819
+
 ```
 
 ```{r}
