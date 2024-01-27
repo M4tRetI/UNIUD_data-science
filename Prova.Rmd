@@ -1,0 +1,102 @@
+---
+title: "Prova"
+author: "Matteo Remorini"
+date: "2024-01-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Domande / spunti
+
+  - Andamento del numero di atleti per edizione / per stato (magari animato da mostrare chi evenutalemtne ha spiccato)        DONE / ----
+  - Andamento quote rosa per edizione                                                                                         DONE
+  - Paesi che hanno ospitato più edizioni                                                                                     IMPOSSIBILE A CAUSA ASSOCIAZIONE CITTA - STATO
+  - Paesi che hanno vinto più medaglie in totale                                                                              ANDAMENTO NEL TEMPO NON SIGNIFICATIVO, IN ASSOLUTO POCO INTERESSANTE
+  - Gli atleti mediamente più alti tra i paesi (oggi) (50 anni fa) (prima)
+  - Gli atleti mediamente più giovani tra i paesi (oggi) (50 anni fa) (prima)
+  - 
+  
+  - I paesi ospitanti vincono di più?
+
+```{r}
+library(readr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+# library(gganimate)
+```
+
+```{r}
+athletes <- read_csv("Dataset/athlete_events.csv") %>%
+  select(-c("ID", "Games")) %>%
+  filter(Year != 1906 & Season == "Summer")
+noc_regions <- read_csv("Dataset/noc_regions.csv")
+
+worldcities <- read_csv("Dataset/worldcities.csv") %>%
+  select(city, country, iso3) %>%
+  rename(City = city) %>%
+  rbind(c(City = "Antwerpen", country = "Belgium", iso3 = "BEL")) %>%
+  rbind(c(City = "Athina", country = "Greece", iso3 = "GRC")) %>%
+  rbind(c(City = "Montreal", country = "Canada", iso3 = "CAN"))
+```
+
+### Andamento del numero di atleti per edizione, con la suddivisione per sesso
+```{r}
+athletes %>%
+  group_by(Year, Sex) %>%
+  summarize(value = n()) %>%
+ggplot(aes(fill=Sex, y=value, x=Year)) + 
+  geom_bar(position="stack", stat="identity") +
+  ggtitle("Numero di atleti per edizioni") +
+  scale_fill_manual("legend", values = c("F" = "#e665df", "M" = "#0d90d1")) +
+  theme_minimal()
+```
+
+### Andamento numero medagli per paese
+```{r}
+## INUTILE -----
+
+# medal_noc_year <- athletes %>%
+#   filter(!is.na(Medal)) %>%
+#   group_by(NOC, Year) %>%
+#   summarize(Medal = n()) %>%
+#   mutate(NOC = replace(NOC, NOC == "URS", "RUS")) %>%
+#   filter(NOC %in% c("USA", "RUS", "GER", "GBR", "FRA", "ITA", "CHN"))
+# 
+# ggplot(medal_noc_year, aes(y=Medal, x=Year, group = NOC, color = NOC)) + 
+#   geom_line() +
+#   ggtitle("Classifica medagliere nel tempo") +
+#   theme_minimal()
+# p <- +
+#   transition_states(
+#     Year,
+#     transition_length = 50,
+#     state_length = 0
+#     ) +
+#   ease_aes('sine-in-out') +
+#   theme_minimal()
+# 
+# animate(p, fps=27, renderer = gifski_renderer(loop = FALSE))
+  
+
+# fig <- plot_geo(medal_noc_year)
+# fig <- fig %>% add_trace(
+#     z = ~Medal, text = ~Medal, locations = ~NOC,
+#     color = ~Medal, colors = 'Blues'
+#   )
+# fig <- fig %>% colorbar(title = "Numero di medaglie")
+# fig <- fig %>% layout(
+#     title = 'Medaglie ricevute dai team nelle varie edizioni'
+#   )
+# 
+# fig
+```
+
+### Altro
+
+```{r}
+
+```
