@@ -26,7 +26,8 @@ library(readr)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
-# library(gganimate)
+library(treemapify)
+library(gganimate)
 ```
 
 ```{r}
@@ -45,16 +46,52 @@ worldcities <- read_csv("Dataset/worldcities.csv") %>%
 ```
 
 ### Andamento del numero di atleti per edizione, con la suddivisione per sesso
+
+<!-- potrebbe servire per fare sostanza (informazioni di base) -->
 ```{r}
-athletes %>%
+# numero di atleti per sesso nell'arco del tempo
+partecipanti <- athletes %>%
   group_by(Year, Sex) %>%
-  summarize(value = n()) %>%
-ggplot(aes(fill=Sex, y=value, x=Year)) + 
+  summarize(value = n())
+partecipanti[nrow(partecipanti)+1, ] <- list(2020,"F", 6608)
+partecipanti[nrow(partecipanti)+1, ] <- list(2020,"M", 7219)
+
+ggplot(partecipanti, aes(fill=Sex, y=value, x=Year)) + 
   geom_bar(position="stack", stat="identity") +
-  ggtitle("Numero di atleti per edizioni") +
   scale_fill_manual("legend", values = c("F" = "#e665df", "M" = "#0d90d1")) +
+  ggtitle("Numero di atleti per edizion") +
   theme_minimal()
 ```
+> Il trend del numero di atleti è in crescita fino al 2000, rimanendo per lo più stazionario tranne un minimo nel 2012.
+>Devono essere visti come separati perchè uno non preclude l'altro, sono due olimpiadi "parallele".
+> A cosa è dovuta la crescita i picchi di minimo e soprattutto il calo di partecipazioni dal '90.
+<!-- forse anche no -->
+
+
+<!-- potrebbe servire per fare sostanza (curiosità) -->
+```{r}
+# Atleti per sport
+
+# numero di sport nell'arco del tempo
+sport_tempo_f <- table(athletes[athletes$Sex == "F", ]$Sport)/nrow(athletes[athletes$Sex == "F", ])*100
+sport_tempo_m <- table(athletes[athletes$Sex == "M", ]$Sport)/nrow(athletes[athletes$Sex == "M", ])*100
+
+ggplot(data.frame(sport_tempo_f), aes(area = Freq, label = paste(Var1, paste0(trunc(Freq*100)/100, "%"), sep ="\n"), subgroup = Var1, fill = Var1)) + 
+  geom_treemap(layout = "fixed") +
+  geom_treemap_text(colour = "white", place = "centre", layout="fixed") +
+  ggtitle("Sport più giocati - Femmine") +
+  theme_minimal() +
+  theme(legend.position="none")
+
+ggplot(data.frame(sport_tempo_m), aes(area = Freq, label = paste(Var1, paste0(trunc(Freq*100)/100, "%"), sep ="\n"), subgroup = Var1, fill = Var1)) + 
+  geom_treemap(layout = "fixed") +
+  geom_treemap_text(colour = "white", place = "centre", layout="fixed") +
+  ggtitle("Sport più giocati - Maschi") +
+  theme_minimal() +
+  theme(legend.position="none")
+
+```
+<!-- forse anche no -->
 
 ### Andamento numero medagli per paese
 ```{r}
@@ -97,9 +134,8 @@ ggplot(aes(fill=Sex, y=value, x=Year)) +
 ```
 
 ### Analisi
+<!-- interessante analizzare la trasformate per capire quali relazioni o altro il fatto delle medaglie così è inutile (magari trovare altro o meglio abbandonare) -->
 ```{r}
-# interessante analizzare la trasformate per capire quali relazioni o altro
-# il fatto delle medaglie così è inutile (magari trovare altro o meglio abbandonare)
 ggplot(athletes, aes(y=Height, x=Age, color = Medal)) + 
   geom_point() +
   ggtitle("Altezza-eta atleti e medagli vinte") +
@@ -117,8 +153,8 @@ ggplot(athletes, aes(y=Weight, x=Age, color = Medal)) +
   theme_minimal()
 ```
 
+<!-- RISULTATO INTERESSANTE - POSSIBILMENTE : magari provare questa cosa con k-means per categorizzare -->
 ```{r}
-# RISULTATO INTERESSANTE - POSSIBILMENTE : magari provare questa cosa con k-means per categorizzare
 athletes %>%
   filter(Sex == "M", Year > 1944) %>%
 ggplot(aes(y=BMI, x=Age, color = Sport)) + 
@@ -141,9 +177,8 @@ ggplot(aes(y=Height, x=Sport, color = Medal)) +
 # Approfondire questo aspetto
 boxplot(Height ~ Sport, athletes)
 ```
-
+<!-- fatto così sembra essere INUTILE -->
 ```{r}
-# fatto così sembra essere INUTILE, 
 ggplot(athletes[athletes$Sex == "M", ], aes(Height, fill = Medal, order = Medal)) +
   geom_histogram(binwidth = 0.5) +
   scale_fill_manual("legend", values = c("Gold" = "#FFDF00", "Silver" = "#C0C0C0", "Bronze" = "#CD7F32"), na.value = "#303030") +
@@ -156,8 +191,8 @@ ggplot(athletes[athletes$Sex == "M", ], aes(Height, fill = Medal, order = Medal)
   theme_minimal()
 ```
 
+<!-- gli istogrammi così sono utili per spiegare qualcosa in particolare, come info di background, altrimenti non vedo utilizzo fondamentale -->
 ```{r}
-# gli istogrammi così sono utili per spiegare qualcosa in particolare, come info di background, altrimenti non vedo utilizzo fondamentale
 hist(athletes[athletes$Sex == "M", ]$BMI, breaks = 60)
 hist(athletes[athletes$Sex == "F", ]$BMI, breaks = 60)
 
@@ -168,17 +203,10 @@ hist(athletes[athletes$Sex == "M", ]$Age, breaks = 60)
 hist(athletes[athletes$Sex == "F", ]$Age, breaks = 60)
 ```
 
-```{r}
-athletes %>%
-  na.omit(Medal) %>%
-ggplot(aes(x=Year) + 
-  geom_freqpoly(aes(color = Sex))) +
-  ggtitle("Numero di medaglie per anno") +
-  theme_minimal()
-```
 
+
+<!-- Potrebbe servire a qualcosa -->
 ```{r}
-# Potrebbe servire a qualcosa
 boxplot(Height ~ Year, athletes)
 boxplot(Height ~ Age, athletes, subset = Sex == "M", range = 2)
 boxplot(Height ~ Age, athletes, subset = Sex == "F", range = 2)
