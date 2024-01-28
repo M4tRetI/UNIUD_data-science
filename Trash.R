@@ -75,3 +75,17 @@ athletes %>%
 
 # Approfondire questo aspetto
 boxplot(Height ~ Sport, athletes)
+
+
+#<!-- fatto così sembra essere INUTILE -->
+
+ggplot(athletes[athletes$Sex == "M", ], aes(Height, fill = Medal, order = Medal)) +
+  geom_histogram(binwidth = 0.5) +
+  scale_fill_manual("legend", values = c("Gold" = "#FFDF00", "Silver" = "#C0C0C0", "Bronze" = "#CD7F32"), na.value = "#303030") +
+  transition_states(
+    Year,
+    transition_length = 50,
+    state_length = 0
+  ) +
+  ease_aes('sine-in-out') +
+  theme_minimal()

@@ -15,11 +15,13 @@ knitr::opts_chunk$set(echo = TRUE)
   - Andamento quote rosa per edizione                                                                                         DONE
   - Paesi che hanno ospitato più edizioni                                                                                     IMPOSSIBILE A CAUSA ASSOCIAZIONE CITTA - STATO
   - Paesi che hanno vinto più medaglie in totale                                                                              ANDAMENTO NEL TEMPO NON SIGNIFICATIVO, IN ASSOLUTO POCO INTERESSANTE
-  - Gli atleti mediamente più alti tra i paesi (oggi) (50 anni fa) (prima)
-  - Gli atleti mediamente più giovani tra i paesi (oggi) (50 anni fa) (prima)
+  - Gli atleti mediamente più alti tra i paesi (oggi) (50 anni fa) (prima)                                                    NON INTERESSANTE, MA STRANO
+  - Gli atleti mediamente più giovani tra i paesi (oggi) (50 anni fa) (prima)                                                 NON INTERESSANTE, HO SCROPERTO DEI TEAM AUTONOMI CHE PARTECIPANO MA NON VEDO COSE PARRTICOLARI
   - 
   
-  - I paesi ospitanti vincono di più?
+  - I paesi ospitanti vincono di più?                                                                                         IMPOSSIBILE A CAUSA ASSOCIAZIONE CITTA - STATO
+  - Analisi sul medagliere italiano           #
+  - Continuo analisi sul nuoto                #
 
 ```{r}
 library(readr)
@@ -35,7 +37,10 @@ athletes <- read_csv("Dataset/athlete_events.csv") %>%
   select(-c("ID", "Games")) %>%
   filter(Year != 1906 & Season == "Summer" & !(Sport %in% c("Art Competitions")) ) %>%
   mutate(BMI = Weight/(Height/100)^2)
-noc_regions <- read_csv("Dataset/noc_regions.csv")
+noc_regions <- read_csv("Dataset/noc_regions.csv") %>%
+  rbind(c("USA", "United States", NA)) %>%
+  rbind(c(NA, "Soviet Union", NA)) %>%
+  rbind(c("GBR", "Great Britain", NA))
 
 athletes_f <- athletes[athletes$Sex == "F", ]
 athletes_m <- athletes[athletes$Sex == "M", ]
@@ -210,21 +215,6 @@ ggplot(aes(x=reorder(Sport, Age, median), y=Age)) +
 ```
 
 
-
-<!-- fatto così sembra essere INUTILE -->
-```{r}
-ggplot(athletes[athletes$Sex == "M", ], aes(Height, fill = Medal, order = Medal)) +
-  geom_histogram(binwidth = 0.5) +
-  scale_fill_manual("legend", values = c("Gold" = "#FFDF00", "Silver" = "#C0C0C0", "Bronze" = "#CD7F32"), na.value = "#303030") +
-  transition_states(
-    Year,
-    transition_length = 50,
-    state_length = 0
-  ) +
-  ease_aes('sine-in-out') +
-  theme_minimal()
-```
-
 <!-- gli istogrammi così sono utili per spiegare qualcosa in particolare, come info di background, altrimenti non vedo utilizzo fondamentale -->
 ```{r}
 hist(athletes[athletes$Sex == "M", ]$BMI, breaks = 60)
@@ -239,16 +229,14 @@ hist(athletes[athletes$Sex == "F", ]$Age, breaks = 60)
 
 
 
-<!-- Potrebbe servire a qualcosa -->
 ```{r}
-boxplot(Height ~ Year, athletes)
-boxplot(Height ~ Age, athletes, subset = Sex == "M", range = 2)
-boxplot(Height ~ Age, athletes, subset = Sex == "F", range = 2)
-```
+medagliere <- winners %>%
+  group_by(Team, Year, Medal) %>%
+  summarize(value = n())
 
-
-```{r}
-
+ggplot(medagliere[medagliere$Team == "Italy", ], aes(x = Year, y = value, group = Medal, color = Medal)) +
+  geom_line() +
+  theme_minimal()
 ```
 
 
