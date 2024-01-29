@@ -26,7 +26,13 @@ knitr::opts_chunk$set(echo = TRUE)
   
 ## Storytelling
 
-  ...
+  - Ad una prima analisi esplorativa ho fatto un grafico con il numero totale di atleti per edizione e ...                          [barplot] [Numero di atleti per edizione](#numero-di-atleti-per-edizione)
+  - Ho poi voluto vedere le quote di partecipazione ai vari sport. Quali sport sono i più partecipati (per entrambi i sessi)        [treemap] [Atleti per sport](#atleti-per-sport)
+  - Allora vedendo il nuoto e avendolo praticato per tanti anni ho deciso di soffermarmici
+    Mi sono chiesto quali fossero le caratteristiche fisiche dei migliori atleti
+      e allora ho cominciato con l'altezza                                                                                          [barplot] [Altezza migliori atleti nuoto](#altezza-migliori-atleti-nuoto)
+      e analizzato poi l'età                                                                                                        [barplot] [Eta migliori atleti nuoto](#eta-migliori-atleti-nuoto)
+  - Poi da quest'ultima cosa mi sono chiesto quali sport sono meno dipendenti dall'età
 
 ## Inizio analisi
 
@@ -36,7 +42,7 @@ library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(treemapify)
-library(gganimate)
+library(plotly)
 ```
 
 ```{r}
@@ -51,13 +57,33 @@ noc_regions <- read_csv("Dataset/noc_regions.csv") %>%
 medagliere_italia <- read_csv("Dataset/medagliere_Italia.csv") %>%
   select(-Tot) %>%
   pivot_longer(!Year, names_to = "Medal", values_to = "value")
+climate <- read_csv("Dataset/climate_majorcities.csv")
+climate <- climate %>%
+  mutate(Year = as.numeric(format(as.Date(climate$dt, format="%Y-%m-%d"),"%Y")),
+         Month = as.numeric(format(as.Date(climate$dt, format="%Y-%m-%d"),"%m"))) %>%
+  filter(Month == 8) %>%
+  rbind(c("1952-08-01", 16.38, NA, "Helsinki", "Finland", "60.16N", "24.93E", 1952, 8)) %>%
+  rbind(c("1972-08-01", 20.41, NA, "Munich", "Germany", "48.13N", "11.58E", 1972, 8)) %>%
+  rbind(c("1972-08-01", 14.538, 0.254,"Moskva","Russia","55.45N","36.85E", 1980, 8)) %>%
+  rbind(c("1992-08-01", 27.34, NA,"Barcelona","Spain","41.38N","2.16E", 1992, 8)) %>%
+  rbind(c("1996-08-01", 26.14, NA,"Atlanta","United States","33.74N","84.38W", 1996, 8)) %>%
+  rbind(c("2004-08-01", 23.25, NA,"Athina","Greece","37.98N","23.72E", 2004, 8)) %>%
+  rbind(c("2008-08-01", 26.60, NA,"Beijing","China","39.90N","116.40E", 2008, 8)) %>%
+  rbind(c("2016-08-01", 22.78, NA,"Rio de Janeiro","Brazil","22.90N","43.17W", 2016, 8)) %>%
+  rbind(c("2016-08-01", 26.11, NA,"Rome","Italy","42.59N", "13.09E", 2016, 8)) %>%
+  rbind(c("1960-08-01", 21.565, 0.682,"Roma","Italy","42.59N", "13.09E", 1960, 8))
+
+climate$Year <- as.numeric(climate$Year)
+climate$Month <- as.numeric(climate$Month)
+climate$averagetemperature <- as.numeric(climate$averagetemperature)
+
 
 athletes_f <- athletes[athletes$Sex == "F", ]
 athletes_m <- athletes[athletes$Sex == "M", ]
 winners <- athletes %>% na.omit(Medal)
 ```
 
-<!-- potrebbe servire per fare sostanza (informazioni di base) -->
+### Numero di atleti per edizione
 ```{r}
 # numero di atleti per sesso nell'arco del tempo
 partecipanti <- athletes %>%
@@ -70,7 +96,12 @@ ggplot(partecipanti, aes(fill=Sex, y=value, x=Year)) +
   geom_bar(position="stack", stat="identity") +
   scale_fill_manual("legend", values = c("F" = "#e665df", "M" = "#0d90d1")) +
   ggtitle("Numero di atleti per edizione") +
-  theme_minimal()
+  scale_x_continuous(name = "Anno", breaks = append(unique(athletes$Year), 2020), labels = append(unique(
+    select(filter(athletes, 
+                  Year != 1956 | (Year == 1956 & City != "Stockholm")
+          ), Year, City))$City, "Tokyo")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 > Il trend del numero di atleti è in crescita fino al 2000, rimanendo per lo più stazionario tranne un minimo nel 2012.
 >Devono essere visti come separati perchè uno non preclude l'altro, sono due olimpiadi "parallele".
@@ -78,6 +109,7 @@ ggplot(partecipanti, aes(fill=Sex, y=value, x=Year)) +
 <!-- forse anche no -->
 
 
+### Atleti per sport
 <!-- POTREBBE SERVIRE PER INTRODURRE ANALISI PIù INCENTRATA SUL NUOTO -->
 ```{r}
 # Atleti per sport
@@ -121,8 +153,6 @@ athletes %>%
     theme_minimal() +
     facet_wrap(vars(Sport))
 ```
-
-
 
 ### Andamento numero medagli per paese
 ```{r}
@@ -168,7 +198,7 @@ athletes %>%
 ### Altro
 
 
-<!-- RISULTATO INTERESSANTE - DA INSERIRE -->
+### Altezza migliori atleti nuoto
 ```{r}
 # Gli atleti alti 183 cm hanno all'ìncirca 4 volte più probabilità rispetto alle altre altezze di vincere una medaglia
 
@@ -185,11 +215,11 @@ temp2 <- temp1 %>%
 ggplot(temp2, aes(x = Height, y = prob*100)) +
   geom_point() +
   geom_segment(aes(x = Height, xend = Height, y = 0, yend = prob*100)) +
-  geom_hline(aes(yintercept=mean(prob*100)), color = "navyblue") +
-  geom_text(aes(160,mean(prob*100),label = paste("Media:", mean(prob*100)), vjust = -1), color = "navyblue") +
-  geom_segment(aes(x = 176, xend = 176, y = 0.22, yend = 0.88), color = "blue",
+  geom_segment(aes(x = 178, xend = 178, y = 0.6708, yend = 0.8291), color = "blue",
                arrow = arrow(length = unit(0.02, "npc"), ends = "both")) +
-  geom_text(aes(174,0.6,label = "4x"), color = "blue", size = 7) +
+  geom_text(aes(173,0.75,label = "~ 23.6%"), color = "blue", size = 6) +
+  geom_segment(aes(x = 177, xend = 194, y = 0.8291, yend = 0.8291), color = "blue") +
+  geom_segment(aes(x = 177, xend = 199, y = 0.6708, yend = 0.6708), color = "blue") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
@@ -205,17 +235,59 @@ temp2.bis <- temp1.bis %>%
 ggplot(temp2.bis, aes(x = Height, y = prob*100)) +
   geom_point() +
   geom_segment(aes(x = Height, xend = Height, y = 0, yend = prob*100)) +
-  geom_hline(aes(yintercept=mean(prob*100)), color = "navyblue") +
-  geom_text(aes(150,mean(prob*100),label = paste("Media:", mean(prob*100)), vjust = -1), color = "navyblue") +
-  geom_segment(aes(x = 169, xend = 169, y = 0.24, yend = 0.825), color = "blue",
+  geom_segment(aes(x = 170, xend = 170, y = 0.625, yend = 0.825), color = "blue",
                arrow = arrow(length = unit(0.02, "npc"), ends = "both")) +
-  geom_text(aes(166,0.6,label = "3.4x"), color = "blue", size = 7) +
-  geom_segment(aes(x = 168, xend = 177, y = 0.825, yend = 0.825), color = "blue") +
+  geom_text(aes(167,0.75,label = "~ 32%"), color = "blue", size = 6) +
+  geom_segment(aes(x = 169, xend = 177, y = 0.825, yend = 0.825), color = "blue") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-# summary(temp2) # media : 0.002106 ; max : 0.008819
+# summary(temp2.bis$prob) # media : 0.002106 ; max : 0.008819
 ```
+
+### Eta migliori atleti nuoto
+```{r}
+# individuo la probabilità di vincita (medaglia qualsiasi) di ogni altezza rispetto al totale
+temp <- athletes_m %>%
+  filter(Sport == "Swimming")
+temp1 <- temp %>%
+  na.omit(Medal)
+temp2 <- temp1 %>%
+  group_by(Age) %>%
+  summarize(prob = n()/nrow(temp)) %>%
+  arrange(prob)
+
+ggplot(temp2, aes(x = Age, y = prob*100)) +
+  geom_point() +
+  geom_segment(aes(x = Age, xend = Age, y = 0, yend = prob*100)) +
+  geom_segment(aes(x = 22, xend = 22, y = 1.29646, yend = 1.628), color = "blue",
+               arrow = arrow(length = unit(0.02, "npc"), ends = "both")) +
+  geom_text(aes(23.4,1.47,label = "~ 25.5%"), color = "blue", size = 4.5) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+temp.bis <- athletes_f %>%
+  filter(Sport == "Swimming")
+temp1.bis <- temp.bis %>%
+  na.omit(Medal)
+temp2.bis <- temp1.bis %>%
+  group_by(Age) %>%
+  summarize(prob = n()/nrow(temp)) %>%
+  arrange(prob)
+
+ggplot(temp2.bis, aes(x = Age, y = prob*100)) +
+  geom_point() +
+  geom_segment(aes(x = Age, xend = Age, y = 0, yend = prob*100)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# summary(temp2.bis$prob) # media : 0.002106 ; max : 0.008819
+```
+
+
+
+
+
 ```{r}
 # Potrebbe essere ciò che mi porta a parlare del nuoto
 # Lo sport in cui un aspetto fisico è più importante
@@ -238,14 +310,14 @@ ggplot(aes(x=reorder(Sport, Age, median), y=Age)) +
 
 <!-- gli istogrammi così sono utili per spiegare qualcosa in particolare, come info di background, altrimenti non vedo utilizzo fondamentale -->
 ```{r}
-hist(athletes[athletes$Sex == "M", ]$BMI, breaks = 60)
-hist(athletes[athletes$Sex == "F", ]$BMI, breaks = 60)
+hist(athletes[athletes$Sex == "M", ]$BMI, breaks = 80)
+hist(athletes[athletes$Sex == "F", ]$BMI, breaks = 80)
 
-hist(athletes[athletes$Sex == "M", ]$Height, breaks = 60)
-hist(athletes[athletes$Sex == "F", ]$Height, breaks = 60)
+hist(athletes[athletes$Sex == "M", ]$Height, breaks = 80)
+hist(athletes[athletes$Sex == "F", ]$Height, breaks = 80)
 
-hist(athletes[athletes$Sex == "M", ]$Age, breaks = 60)
-hist(athletes[athletes$Sex == "F", ]$Age, breaks = 60)
+hist(athletes[athletes$Sex == "M", ]$Age, breaks = 80)
+hist(athletes[athletes$Sex == "F", ]$Age, breaks = 80)
 ```
 
 
@@ -275,17 +347,53 @@ rbind(c(2020, "Tokyo"), unique(select(anni_interesse, Year, City)))
 
 # 2 a Los Angeles, 1 a Roma e 1 a Tokyo (la più recente) lo togliere questo (per via dell'atletica..., non so)
 # Quando è stata a Roma (1960), avevamo più atleti?
-athletes %>%
+partecip_ed <- athletes %>%
   filter(Team == "Italy") %>%
   group_by(Year, City) %>%
   summarize(n_ath = n()) %>%
-  ggplot(aes(x = Year, y = n_ath, fill = factor(ifelse(Year==1960,"Highlighted","Normal")))) +
-  geom_bar(position = "stack", stat = "identity") +
-  theme_minimal() +
-  theme(legend.position = "none")
-# Si più atleti delle vicine, ma nemmeno tanto. Helsinki due edizioni prima e Monaco 3 anni dopo
+  filter(Year != 1956 | (Year == 1956 & City != "Stockholm"))
+
+ggplot(partecip_ed, aes(x = Year, y = n_ath, fill = factor(ifelse(Year==1960,"Highlighted","Normal")))) +
+geom_bar(position = "stack", stat = "identity") +
+scale_x_continuous(name = "Anno", breaks = partecip_ed$Year, labels = partecip_ed$City) +
+theme_minimal() +
+theme(legend.position = "none",
+      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
+  )
+# Si più atleti nelle vicine, ma nemmeno tanto. Helsinki due edizioni prima e Monaco 3 anni dopo
 
 # Il numero di atleti è dettato dalla distanza e/o dal clima particolarmente diverso ?
+# Incrocio dati
+temperature_luoghi <- left_join(filter(partecip_ed, Year > 1928), rename(climate, City = city), by = c("Year", "City")) %>%
+  left_join(
+    select(
+      filter(climate, city == "Rome"), 
+      Year, latitude, longitude, averagetemperature), 
+    by = "Year") %>%
+  mutate(t_diff = averagetemperature.x - averagetemperature.y)
+
+temperature_luoghi$n_ath <- filter(partecip_ed, Year >= 1932)$n_ath
+```
+
+```{r}
+# Clima
+ggplot(temperature_luoghi, aes(x = n_ath, y = t_diff, color = factor(ifelse(Year %in% c(1932, 1960, 1984, 2020),
+        "Highlighted","Normal")))) +
+  geom_point() +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Distanza
+
+```
+
+```{r}
+temperature_ediz <- left_join(filter(athletes, Year > 1928 & !is.na(Medal)), rename(select(climate, Year, city, averagetemperature), City = city), by = c("Year", "City"))
+
+ggplot(athletes, aes(x = BMI, y = averagetemperature, color = Medal)) +
+  geom_point(size = 0.5) +
+  theme_minimal()
+
 
 
 # conta il numero di volte che si è svolta nella stessa città
