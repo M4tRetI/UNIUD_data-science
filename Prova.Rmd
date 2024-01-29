@@ -42,7 +42,8 @@ library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(treemapify)
-library(plotly)
+library(units)
+library(ggcorrplot)
 ```
 
 ```{r}
@@ -320,8 +321,7 @@ hist(athletes[athletes$Sex == "M", ]$Age, breaks = 80)
 hist(athletes[athletes$Sex == "F", ]$Age, breaks = 80)
 ```
 
-
-
+### Potrebbe essere utile
 ```{r}
 athletes %>%
   filter(Sport == "Swimming") %>%
@@ -332,11 +332,11 @@ athletes %>%
 ```
 
 ```{r}
-medagliere_italia$Medal <- factor(medagliere_italia$Medal, level = c("Gold", "Silver", "Bronze"))
-
 ggplot(medagliere_italia, aes(x = Year, y = value, group = Medal, fill = Medal)) +
   geom_bar(position = "stack", stat = "identity") +
-  theme_minimal()  
+  scale_x_continuous(name = "Anno", breaks = append(partecip_ed$Year, 2020), labels = append(partecip_ed$City, "Tokyo")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 # Perchè ci sono i picchi nel 1932, 1960, 1984, 2020 ?
 
@@ -353,18 +353,18 @@ partecip_ed <- athletes %>%
   summarize(n_ath = n()) %>%
   filter(Year != 1956 | (Year == 1956 & City != "Stockholm"))
 
-ggplot(partecip_ed, aes(x = Year, y = n_ath, fill = factor(ifelse(Year==1960,"Highlighted","Normal")))) +
-geom_bar(position = "stack", stat = "identity") +
-scale_x_continuous(name = "Anno", breaks = partecip_ed$Year, labels = partecip_ed$City) +
-theme_minimal() +
-theme(legend.position = "none",
-      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
-  )
+# ggplot(partecip_ed, aes(x = Year, y = n_ath, fill = factor(ifelse(Year==1960,"Highlighted","Normal")))) +
+# geom_bar(position = "stack", stat = "identity") +
+# scale_x_continuous(name = "Anno", breaks = partecip_ed$Year, labels = partecip_ed$City) +
+# theme_minimal() +
+# theme(legend.position = "none",
+#       axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
+#   )
 # Si più atleti nelle vicine, ma nemmeno tanto. Helsinki due edizioni prima e Monaco 3 anni dopo
 
 # Il numero di atleti è dettato dalla distanza e/o dal clima particolarmente diverso ?
 # Incrocio dati
-temperature_luoghi <- left_join(filter(partecip_ed, Year > 1928), rename(climate, City = city), by = c("Year", "City")) %>%
+aggreg_dati_italia <- left_join(filter(partecip_ed, Year > 1928), rename(climate, City = city), by = c("Year", "City")) %>%
   left_join(
     select(
       filter(climate, city == "Rome"), 
@@ -372,30 +372,80 @@ temperature_luoghi <- left_join(filter(partecip_ed, Year > 1928), rename(climate
     by = "Year") %>%
   mutate(t_diff = averagetemperature.x - averagetemperature.y)
 
-temperature_luoghi$n_ath <- filter(partecip_ed, Year >= 1932)$n_ath
+aggreg_dati_italia$n_ath <- filter(partecip_ed, Year >= 1932)$n_ath
 ```
 
 ```{r}
 # Clima
-ggplot(temperature_luoghi, aes(x = n_ath, y = t_diff, color = factor(ifelse(Year %in% c(1932, 1960, 1984, 2020),
+ggplot(aggreg_dati_italia, aes(x = n_ath, y = t_diff, color = factor(ifelse(Year %in% c(1932, 1960, 1984, 2020),
         "Highlighted","Normal")))) +
   geom_point() +
   theme_minimal() +
   theme(legend.position = "none")
 
 # Distanza
+calc_dist <- function (lat1, lon1, lat2, lon2) {
+  lat1_n <- as.numeric(substr(lat1, 1, nchar(lat1)-1))
+  lat2_n <- as.numeric(substr(lat2, 1, nchar(lat2)-1))
+  lon1_n <- as.numeric(substr(lon1, 1, nchar(lon1)-1))
+  lon2_n <- as.numeric(substr(lon2, 1, nchar(lon2)-1))
+  dLat <- deg2rad(lat2_n - lat1_n)
+  dLon <- deg2rad(lon2_n - lon1_n)
+  
+  a <- (dLat/2) * sin(dLat/2) + cos(deg2rad(lat1_n)) * cos(deg2rad(lat2_n)) * sin(dLon/2) * sin(dLon/2)
+  c <- 2 * atan2(sqrt(a), sqrt(1-a))
+  return(c * 6371)
+}
+
+deg2rad <- function (deg) {
+  return(deg * (pi/180))
+}
+
+aggreg_dati_italia <- aggreg_dati_italia %>%
+  mutate(dist = calc_dist(latitude.x, longitude.x, latitude.y, longitude.y))
+
+ggplot(aggreg_dati_italia, aes(x = n_ath, y = dist, color = factor(ifelse(Year %in% c(1932, 1960, 1984, 2020),
+        "Highlighted","Normal")))) +
+  geom_point() +
+  theme_minimal() +
+  theme(legend.position = "none")
 
 ```
 
 ```{r}
-temperature_ediz <- left_join(filter(athletes, Year > 1928 & !is.na(Medal)), rename(select(climate, Year, city, averagetemperature), City = city), by = c("Year", "City"))
+medals <- read_delim("Dataset/Medals.csv", delim=";")
 
-ggplot(athletes, aes(x = BMI, y = averagetemperature, color = Medal)) +
-  geom_point(size = 0.5) +
+medals_cor <- cor(na.omit(select(medals, -c("Team", "Rank by Total", "Rank", "Total"))))
+
+ggcorrplot(medals_cor, type = "lower", lab = TRUE)
+
+# Correlazione medaglie Italia
+medagliere_italia <- athletes %>%
+  filter(Team == "Italy") %>%
+  na.omit(Medal) %>%
+  select(Year, Medal) %>%
+  table()
+
+ggcorrplot(cor(medagliere_italia), 
+           lab = TRUE,
+           ggtheme = ggplot2::theme_gray,
+            colors = c("#6D9EC1", "white", "#E46726"))
+  
+ggplot(as.data.frame.matrix(medagliere_italia), aes(x = Silver, y = Gold)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
   theme_minimal()
+ggplot(as.data.frame.matrix(medagliere_italia), aes(x = Silver, y = Bronze)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_minimal()
+ggplot(as.data.frame.matrix(medagliere_italia), aes(x = Bronze, y = Gold)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_minimal()
+```
 
-
-
+```{r}
 # conta il numero di volte che si è svolta nella stessa città
 events_city <- athletes %>%
   select(Year, City) %>%
@@ -403,8 +453,6 @@ events_city <- athletes %>%
   unique()
 
 table(events_city$City)
-
-
 ```
 
 
