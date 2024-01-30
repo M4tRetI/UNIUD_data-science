@@ -478,3 +478,20 @@ g0 + g1 + g2 + g3 +
   plot_layout(widths = c(2, 2))
 ```
 
+
+## Conclusioni
+
+Analizzando i dati relativi ai Giochi olimpici estivi si osserva che da circa inizio anni 2000 il numero di partecipanti è pressoché stazionario, mentre le quote rose sono quasi alla parità; gli sport più giocati sono l'atletica, la ginnastica e il nuoto.
+
+Per quanto concerne il nuoto, le caratteristiche fisiche dei vincitori come l'altezza e l'età sembrano avere una non poca importanza; permettendo una maggiore possibilità di vincita rispetto agli avversari (in media totale) del ~27%.<br>
+Le migliori combinazioni secondo i dati sono:
+
+  - `Maschi = (Età : 21 anni , Altezza : 183, 188 e 193cm)`
+  - `Femmine = (Età : dai 16 ai 22 anni , Altezza : 173 e 175cm)`
+  
+Il medagliere dell'Italia Team presenta 4 picchi che non dipendono dalle ipotesi di differenza di temperatura o distanza del paese ospitante. <br>
+Mentre, il numero di medaglie di bronzo e di oro sembrano essere legate dalla retta di regressione y = 2.005 + x con R^2 = 0.6156.
+
+
+# Fine
+
