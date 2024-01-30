@@ -1,0 +1,116 @@
+
+:root {
+  --text-color: #000000;
+  --blue: #0081C8;
+  --yellow: #FCB131;
+  --green: #00A651;
+  --red: #EE334E;
+  --primary-color: #D5E1D2;
+}
+
+/**  Stile generale  **/
+
+slides slide article {
+  margin-left: 0.5rem;
+}
+* {
+  font-family: monospace;
+}
+
+h1, h2, h3, h4, h5, h6, p, span, li, a {
+  color: var(--text-color) !important;
+}
+h3 {
+  margin-bottom: 1rem;
+}
+a {
+  color: var(--blue) !important;
+}
+pre {
+  color: var(--blue) !important;
+}
+p {
+  font-size: 1.4rem;
+}
+h1, h2 {
+  color: var(--text-color) !important;
+}
+span[highlight] {
+  box-shadow: 0 0 1px 4px rgba(255, 141, 15, 0.4);
+}
+
+slides > slide {
+  backgorund: "white" !important;
+}
+
+/**  Prima slide  **/
+
+.title-slide hgroup {
+  width: 80%;
+}
+.title-slide hgroup h1 {
+  width: 100%;
+  font-size: 2.85rem;
+  margin-left: 6rem;
+  border-bottom: 3px solid var(--text-color);
+  transform: translateY(-7rem);
+}
+/*.title-slide hgroup h1:after {
+  content: '';
+  width: 100%;
+  height: 2px;
+  top: -4rem;
+  left: 0;
+  position: absolute;
+  background-color: var(--text-color);
+  margin-left: 6rem;
+}*/
+.title-slide hgroup h2 {
+  color: white !important;
+}
+.title-slide hgroup h2:before { display: none; }
+.title-slide hgroup img {
+  width: 20rem;
+  position: absolute;
+  bottom: 22.5rem;
+  left: -4.5rem;
+}
+.title-slide hgroup p {
+  font-size: initial;
+  margin: 0;
+  line-height: normal;
+  text-align: right;
+  opacity: 0.85;
+}
+
+/**  Seconda slide  **/
+
+div.custom_list p span {
+  font-size: 1.3rem;
+  padding: 0.6rem 1.7rem;
+  background: var(--primary-color);
+  border-radius: 7px;
+  border: 1px solid var(--text-color);
+  line-height: 4rem;
+  margin-right: 1.45rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/** Slide segue **/
+slides slide.segue {
+  background: white !important;
+}
+slides slide.segue hgroup h2 {
+  text-align: center;
+}
+slides slide.segue hgroup h2:before {
+  content: '';
+  width: 300%;
+  height: 2px;
+  top: -6rem;
+  left: 0;
+  position: absolute;
+  background-color: var(--text-color);
+  margin-left: 6rem;
+}

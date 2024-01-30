@@ -26,7 +26,7 @@ knitr::opts_chunk$set(echo = TRUE)
   
 ## Storytelling
 
-  - Ad una prima analisi esplorativa ho fatto un grafico con il numero totale di atleti per edizione e ...                          [barplot] [Numero di atleti per edizione](#numero-di-atleti-per-edizione)
+  - Ad una prima analisi esplorativa ho fatto un grafico con il numero totale di atleti per edizione e ...                          [barplot] [Numero di atleti per edizione](#numero-di-atleti-per-edizione)   OK
   - Ho poi voluto vedere le quote di partecipazione ai vari sport. Quali sport sono i più partecipati (per entrambi i sessi)        [treemap] [Atleti per sport](#atleti-per-sport)
   - Allora vedendo il nuoto e avendolo praticato per tanti anni ho deciso di soffermarmici
     Mi sono chiesto quali fossero le caratteristiche fisiche dei migliori atleti
@@ -35,6 +35,8 @@ knitr::opts_chunk$set(echo = TRUE)
   - Poi da quest'ultima cosa mi sono chiesto quali sport sono meno dipendenti dall'età
 
 ## Inizio analisi
+
+### Data wrangling
 
 ```{r}
 library(readr)
@@ -413,12 +415,6 @@ ggplot(aggreg_dati_italia, aes(x = n_ath, y = dist, color = factor(ifelse(Year %
 ```
 
 ```{r}
-medals <- read_delim("Dataset/Medals.csv", delim=";")
-
-medals_cor <- cor(na.omit(select(medals, -c("Team", "Rank by Total", "Rank", "Total"))))
-
-ggcorrplot(medals_cor, type = "lower", lab = TRUE)
-
 # Correlazione medaglie Italia
 medagliere_italia <- athletes %>%
   filter(Team == "Italy") %>%
@@ -433,15 +429,15 @@ ggcorrplot(cor(medagliere_italia),
   
 ggplot(as.data.frame.matrix(medagliere_italia), aes(x = Silver, y = Gold)) +
   geom_point() +
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm", se = FALSE) +
   theme_minimal()
 ggplot(as.data.frame.matrix(medagliere_italia), aes(x = Silver, y = Bronze)) +
   geom_point() +
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm", se = FALSE) +
   theme_minimal()
 ggplot(as.data.frame.matrix(medagliere_italia), aes(x = Bronze, y = Gold)) +
   geom_point() +
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm", se = FALSE) +
   theme_minimal()
 ```
 
