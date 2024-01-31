@@ -332,15 +332,19 @@ aggreg_dati_italia <- left_join(filter(partecip_ed, Year > 1928), rename(climate
       filter(climate, city == "Rome"), 
       Year, latitude, longitude, averagetemperature), 
     by = "Year") %>%
-  mutate(t_diff = averagetemperature.x - averagetemperature.y)
+  mutate(t_diff = averagetemperature.x - averagetemperature.y) %>%
+  left_join(as.data.frame(medagliere_italia) %>%
+              group_by(Year) %>% 
+              summarise(n = sum(value)) %>%
+              mutate(Year = as.integer(as.character(Year))),
+            by = "Year"
+            )
 
 aggreg_dati_italia$n_ath <- filter(partecip_ed, Year >= 1932)$n_ath
 ```
 ```{r fig.align='center', fig.width = 8, fig.height = 4.8}
-ggplot(aggreg_dati_italia, aes(x = n_ath, y = t_diff, color = factor(ifelse(Year %in% c(1932, 1960, 1984, 2020),
-        "Highlighted","Normal")))) +
-  scale_color_manual(values = c("Highlighted" = "#EE334E", "Normal" = "#000000"), na.value = "#F0F0F0") +
-  xlab("Numero atleti Italia Team") +
+ggplot(aggreg_dati_italia, aes(x = n, y = t_diff)) +
+  xlab("Numero medaglie vinte") +
   ylab("Differenza temperatura [°C]") +
   geom_point() +
   theme_minimal() +
@@ -351,7 +355,7 @@ ggplot(aggreg_dati_italia, aes(x = n_ath, y = t_diff, color = factor(ifelse(Year
         axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)))
 ```
 
-**Bassa correlazione**. Indice di correlazione lineare : 0.1506913
+**Nessuna correlazione**. Indice di correlazione lineare : `r cor(na.omit(aggreg_dati_italia)$n, na.omit(aggreg_dati_italia)$t_diff)`
 
 
 ## 2 - Distanza paesi
@@ -378,10 +382,8 @@ aggreg_dati_italia <- aggreg_dati_italia %>%
   mutate(dist = calc_dist(latitude.x, longitude.x, latitude.y, longitude.y))
 ```
 ```{r fig.align='center', fig.width = 8, fig.height = 4.8}
-ggplot(aggreg_dati_italia, aes(x = n_ath, y = dist, color = factor(ifelse(Year %in% c(1932, 1960, 1984, 2020),
-        "Highlighted","Normal")))) +
-  scale_color_manual(values = c("Highlighted" = "#EE334E", "Normal" = "#000000"), na.value = "#F0F0F0") +
-  xlab("Numero atleti Italia Team") +
+ggplot(aggreg_dati_italia, aes(x = n, y = dist)) +
+  xlab("Numero medaglie vinte") +
   ylab("Distanza [km]") +
   geom_point() +
   theme_minimal() +
@@ -392,7 +394,7 @@ ggplot(aggreg_dati_italia, aes(x = n_ath, y = dist, color = factor(ifelse(Year %
         axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)))
 ```
 
-**Bassa correlazione**. Indice di correlazione lineare : -0.0195657
+**Nessuna correlazione**. Indice di correlazione lineare : `r cor(na.omit(aggreg_dati_italia)$n, na.omit(aggreg_dati_italia)$dist)`
 
 
 ## Medagliere - Correlazioni
